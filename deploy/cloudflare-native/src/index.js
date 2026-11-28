@@ -7,6 +7,7 @@ import { dropboxOauthRequest } from './dropbox-oauth.js';
 import { connectedDriveRequest } from './connected-drive.js';
 import { googleOauthRequest } from './google-oauth.js';
 import { googleLoginRequest } from './google-login.js';
+import { r2WebdavRequest } from './r2-webdav.js';
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 const json = (status, payload) => new Response(JSON.stringify(payload), {
@@ -48,6 +49,10 @@ export async function handleRequest(request, env) {
       return new Response(asset.body, {status: asset.status, headers});
     } catch { return json(503, {error:'UI unavailable'}); }
   }
+  if (url.pathname.startsWith('/dav/')) return r2WebdavRequest(request, env);
+  if (url.pathname === '/dav') return env?.KOVA_EXPERIMENTAL_R2_DAV === 'enabled'
+    ? new Response(null, { status: 308, headers: { location: '/dav/', 'cache-control': 'no-store' } })
+    : json(404, { error: 'Not found' });
   if (request.method === 'GET' && url.pathname === '/ping') return json(200, { ok: true, experimental: true });
   if (url.pathname.startsWith('/v2/auth/google/')) return googleLoginRequest(request, env);
   if (url.pathname.startsWith('/v2/google-drive/oauth/')) return googleOauthRequest(request, env);

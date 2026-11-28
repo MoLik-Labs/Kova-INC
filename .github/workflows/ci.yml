@@ -149,6 +149,7 @@ jobs:
           node ../../tests/cloudflare_user_management_workerd_test.mjs
           node ../../tests/cloudflare_role_management_workerd_test.mjs
           node ../../tests/cloudflare_credential_vault_workerd_test.mjs
+          node ../../tests/cloudflare_r2_webdav_workerd_test.mjs
           node ../../tests/cloudflare_connected_drive_workerd_test.mjs
           node ../../tests/cloudflare_google_oauth_workerd_test.mjs
           node ../../tests/cloudflare_google_identity_workerd_test.mjs

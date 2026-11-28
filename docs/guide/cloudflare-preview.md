@@ -29,3 +29,37 @@ Multi-user experiments require a separate Worker, separate D1 with migrations, s
 Before real use the project still needs a security-reviewed login, abuse protection, key recovery, permissions/sharing, additional drivers, real browser and cloud-resource tests. If CSS or JS does not load, check `GET /`, `/app.css`, `/app.js`, the `ASSETS` binding, build configuration and CSP; do not publish the entire repository.
 
 To test D1 and deploy a **separate** experimental Worker after the code reaches your fork, see the [isolated step-by-step guide](./cloudflare-isolated). Do not use the local config on an existing Worker.
+
+## Read-only WebDAV experiment
+
+The isolated Worker includes an **opt-in, experimental R2-only WebDAV subset**;
+it is not full WebDAV or a Kova replacement. It requires a separate test R2
+bucket, a nonempty restricted prefix, and dedicated Basic credentials. Leave
+`KOVA_NATIVE_TOKEN` unset for a DAV-only test: the separate legacy `/v1` API
+can expose the whole bucket and is not confined by the DAV prefix. It can
+only read: do not use it for NodeWarden backups or connect sensitive data. R2
+account setup can require payment verification; do not add a card if you do not
+want to. See the repository's `deploy/cloudflare-native/README.md` for exact
+settings, protocol limits and local test guidance. Do not overwrite `kova-inc`.
+
+After merging, test only on a **new, separate** Worker and R2 bucket:
+
+1. Create a test bucket and bind it as `R2`; do not attach real data.
+2. Set `KOVA_EXPERIMENTAL_R2_DAV=enabled` and `KOVA_DAV_PREFIX=test-root/`
+   on the test Worker. The prefix must be nonempty, end in `/`, and have no
+   `.` or `..` components.
+3. Set a dedicated `KOVA_DAV_USERNAME` (ASCII letters/digits, `_`, `-`, `.`)
+   and random `KOVA_DAV_PASSWORD` (32–128 printable ASCII characters without
+   spaces) using Worker secrets. Never commit or send secrets in chat. Anyone
+   with the credentials can read the whole prefix; there is no RBAC, 2FA or
+   rate limiting.
+4. Over HTTPS, try PROPFIND Depth 0/1 and GET on dummy files with a WebDAV
+   client. Leave the legacy `/v1` bearer API disabled for a DAV-only test.
+   Remove the test Worker and secrets when no longer needed.
+
+Only OPTIONS, GET, HEAD and PROPFIND are supported; no writes, deletion, locks,
+Range, full WebDAV Class 1/2, or per-account permissions. PROPFIND ignores
+requested property selection and returns a fixed set; bodies are limited to
+16 KiB. A directory exceeding a single R2 listing page returns 507 instead of
+partial results. Mock and workerd/R2 emulator tests passed; actual WebDAV
+clients and real R2 have not been tested.

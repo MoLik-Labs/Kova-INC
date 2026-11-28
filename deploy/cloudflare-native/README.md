@@ -11,7 +11,7 @@ bucket as `R2` and set `KOVA_NATIVE_TOKEN` to a unique random secret of at least
 32 characters through Cloudflare's runtime secret settings. Use HTTPS. Do not
 bind production data. There is deliberately no one-click button: the prototype
 has no user registration or production-ready login, Kova-compatible D1 metadata, large/multipart uploads, deletion, permission scopes, rate
-limiting, session revocation, WebDAV, legacy API compatibility, backup workflow,
+limiting, session revocation, full WebDAV, legacy API compatibility, backup workflow,
 or real-provider/browser testing. Possession of the single token grants read
 access to the **entire bucket**, including create access if writes are enabled. Do not expose this on a public service or use
 it to store sensitive data. Hash comparison and error redaction are not a
@@ -322,3 +322,36 @@ not automatically revoke already-issued sessions. Redirect query logging and
 session-token handling require review. Provisioning and privilege assignment
 must not be exposed until end-to-end authentication and authorization are
 reviewed. Keep all experimental flags disabled; use no sensitive accounts.
+
+## Experimental read-only R2 WebDAV subset
+
+The standalone Worker can optionally expose **read-only** `/dav/` against a
+single nonempty R2 prefix. This is a protocol subset, not WebDAV class 1/2 or a
+Kova-compatible/multi-user server. It is disabled unless
+`KOVA_EXPERIMENTAL_R2_DAV=enabled` is explicitly configured. Configure a
+separate test bucket and `KOVA_DAV_PREFIX` such as `test-root/` (must be nonempty,
+end in `/`, and contain no `.` or `..` segments). Set a dedicated
+`KOVA_DAV_USERNAME` (ASCII letters, digits, `_`, `-`, `.`) and a random
+`KOVA_DAV_PASSWORD` (32–128 printable ASCII characters, no spaces) via Worker
+secrets; never commit them or share them in chat. Use HTTPS only. A Basic client
+with these credentials can read the **entire configured prefix**, without
+per-user roles, sessions, 2FA, IP limits or rate limiting. The legacy `/v1`
+R2 API is independent: configuring `KOVA_NATIVE_TOKEN` grants its bearer holder
+access to the whole bucket, not just this prefix. Leave that token unset when
+testing DAV alone, and do not assume DAV restrictions apply to other routes.
+Do not use real accounts or data; do not enable on the existing `kova-inc` Worker. R2 may
+require Cloudflare account setup or a payment method: do not assume free
+provisioning is available to your account.
+
+Supports OPTIONS, GET, HEAD and PROPFIND with Depth 0 or 1, plus a bounded
+16 KiB PROPFIND body. Property selection is ignored and a fixed set of
+properties returned; it does not advertise WebDAV class compliance. A folder
+with a truncated R2 listing fails with 507 rather than returning incomplete
+results. No ranges, pagination, locks, writes, deletes, quotas, backup destination,
+conditional requests, public sharing or external provider mounts. GETs are
+attachment-only and do not preserve provider Content-Type. Do not use as a
+NodeWarden backup target. The feature was tested with mocks and workerd's local
+R2 emulator, not actual Cloudflare R2 or real WebDAV clients.
+
+For source references, license notices, and remaining compatibility gates see
+[`docs/architecture/cloudflare-reference-audit.md`](../../docs/architecture/cloudflare-reference-audit.md).

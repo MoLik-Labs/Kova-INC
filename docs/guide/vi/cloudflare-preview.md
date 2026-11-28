@@ -29,3 +29,26 @@ Sau đăng nhập, chọn kết nối để duyệt thư mục; nút **Xem thêm
 Trước khi dùng thật vẫn cần hoàn thiện và rà soát bảo mật đăng nhập, bảo vệ chống lạm dụng, phục hồi khóa, phân quyền/chia sẻ, các driver, kiểm thử trình duyệt và kiểm thử tài nguyên thực tế. Nếu giao diện không tải CSS/JS, kiểm tra `GET /`, `/app.css`, `/app.js`, binding `ASSETS`, cấu hình build và CSP; không đăng tải toàn bộ repository.
 
 Để kiểm tra D1 và deploy một Worker thử nghiệm **riêng** sau khi mã có trong fork, xem [hướng dẫn cô lập từng bước](./cloudflare-isolated). Không dùng cấu hình local cho Worker đang chạy.
+
+## WebDAV chỉ đọc thử nghiệm
+
+Worker cô lập có một **phần WebDAV thử nghiệm chỉ đọc R2**, mặc định tắt;
+không phải WebDAV đầy đủ hay bản thay thế Kova. Cần bucket R2 thử nghiệm riêng,
+prefix giới hạn không rỗng và thông tin Basic riêng. Không đặt `KOVA_NATIVE_TOKEN` khi chỉ thử DAV: API `/v1` cũ dùng token đó có thể đọc toàn bucket, không bị giới hạn bởi prefix DAV. Không thể ghi: không dùng
+làm đích backup NodeWarden hoặc kết nối dữ liệu nhạy cảm. Việc tạo R2 có thể cần
+xác minh thanh toán tùy tài khoản; đừng thêm thẻ nếu bạn không muốn. Xem
+`deploy/cloudflare-native/README.md` trong repository để biết cấu hình, giới
+hạn giao thức và kiểm thử cục bộ. Không ghi đè Worker `kova-inc`.
+
+Chỉ thử sau khi mã này đã merge, trên Worker và R2 **mới, riêng**:
+
+1. Tạo bucket thử nghiệm và binding `R2`; không gắn bucket chứa dữ liệu thật.
+2. Đặt `KOVA_EXPERIMENTAL_R2_DAV=enabled` và `KOVA_DAV_PREFIX=test-root/` trong cấu hình Worker thử nghiệm. Prefix phải không rỗng, kết thúc bằng `/`, không chứa thành phần `.` hay `..`.
+3. Trong mục quản lý secrets của Worker thử nghiệm, đặt `KOVA_DAV_USERNAME` (chữ/số ASCII, dấu `_`, `-` hoặc `.`) và `KOVA_DAV_PASSWORD` ngẫu nhiên dài 32–128 ký tự ASCII in được, không có khoảng trắng. Không ghi bí mật vào repo hoặc gửi trong chat. Tất cả ai có cặp này đều đọc được toàn bộ prefix; không có RBAC, 2FA hay giới hạn lượt.
+4. Dùng HTTPS và client WebDAV để thử `PROPFIND` Depth 0/1 và `GET` với file giả. Không bật API bearer `/v1` nếu chỉ thử DAV. Xóa secrets và Worker thử sau khi kết thúc nếu không cần.
+
+Chỉ hỗ trợ `OPTIONS`, `GET`, `HEAD`, `PROPFIND`; không ghi/xóa/khóa,
+không hỗ trợ Range hay WebDAV Class 1/2 đầy đủ, không áp dụng quyền theo tài
+khoản. PROPFIND trả bộ thuộc tính cố định, không chọn theo body; body tối đa
+16 KiB. Thư mục quá giới hạn một trang R2 trả 507 thay vì trả thiếu. Đã thử với
+mock và workerd/R2 giả lập, chưa thử client WebDAV hay R2 thật.

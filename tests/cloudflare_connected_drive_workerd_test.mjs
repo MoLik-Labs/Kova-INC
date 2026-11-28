@@ -4,7 +4,7 @@ import { Miniflare, convertV4MiniflareOptions } from '../deploy/cloudflare-worke
 
 const root = new URL('../deploy/cloudflare-native/src/', import.meta.url);
 const modules = [];
-for (const name of ['index.js', 'connected-drive.js', 'google-drive.js','dropbox.js','connected-dropbox.js','dropbox-oauth.js', 'google-oauth.js', 'google-login.js', 'google-identity.js', 'credential-vault.js', 'sessions.js']) {
+for (const name of ['index.js', 'r2-webdav.js', 'connected-drive.js', 'google-drive.js','dropbox.js','connected-dropbox.js','dropbox-oauth.js', 'google-oauth.js', 'google-login.js', 'google-identity.js', 'credential-vault.js', 'sessions.js']) {
   modules.push({ type: 'ESModule', path: `${process.cwd()}/app/${name}`, contents: await readFile(new URL(name, root), 'utf8') });
 }
 const key = Buffer.alloc(32, 7).toString('base64url');

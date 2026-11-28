@@ -7,7 +7,7 @@ const privateKey=await crypto.subtle.exportKey('jwk',pair.privateKey);
 const key=Buffer.alloc(32,4).toString('base64url');
 const root = new URL('../deploy/cloudflare-native/src/',import.meta.url);
 const modules=[];
-for (const name of ['index.js','connected-drive.js','google-drive.js','dropbox.js','connected-dropbox.js','dropbox-oauth.js','google-oauth.js','google-login.js','google-identity.js','credential-vault.js','sessions.js'])
+for (const name of ['index.js', 'r2-webdav.js','connected-drive.js','google-drive.js','dropbox.js','connected-dropbox.js','dropbox-oauth.js','google-oauth.js','google-login.js','google-identity.js','credential-vault.js','sessions.js'])
   modules.push({type:'ESModule',path:`${process.cwd()}/app/${name}`,contents:await readFile(new URL(name,root),'utf8')});
 const harness=`import {handleRequest} from './app/index.js';
 import {createGoogleConnection} from './app/credential-vault.js';
